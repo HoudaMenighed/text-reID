@@ -103,6 +103,11 @@ def do_train(start_epoch, args, model, train_loader, evaluator, optimizer,
                     best_top1 = top1
                     arguments["epoch"] = epoch
                     checkpointer.save("best", **arguments)
+        if (epoch) % 5 == 0:
+            checkpointer.save(
+                name=f"checkpoint_epoch_{epoch + 1}",
+                **arguments
+            )
     if get_rank() == 0:
         logger.info(f"best R1: {best_top1} at epoch {epoch}")
 
