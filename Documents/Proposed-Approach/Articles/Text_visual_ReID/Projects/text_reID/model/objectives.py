@@ -8,7 +8,7 @@ def compute_sdm(image_fetures, text_fetures, pid, logit_scale, image_id=None, fa
     Similarity Distribution Matching
     """
     batch_size = image_fetures.shape[0]
-    pid = pid.reshape((batch_size, 1)) # make sure pid size is [batch_size, 1]
+    pid = pid.reshape((batch_size, 1))  # make sure pid size is [batch_size, 1]
     pid_dist = pid - pid.t()
     labels = (pid_dist == 0).float()
 
@@ -55,7 +55,6 @@ def compute_itc(image_features, text_features, logit_scale):
     labels = torch.arange(start=0, end=batch_size, dtype=torch.int64)
     labels = labels.to(image_features.device)
 
-    
     # normalized features
     image_norm = image_features / image_features.norm(dim=-1, keepdim=True)
     text_norm = text_features / text_features.norm(dim=-1, keepdim=True)
@@ -65,8 +64,8 @@ def compute_itc(image_features, text_features, logit_scale):
     logits_per_text = logits_per_image.t()
 
     loss_i = F.cross_entropy(logits_per_image, labels)
-    loss_t =F.cross_entropy(logits_per_text, labels)
-    loss = (loss_i +  loss_t)/2
+    loss_t = F.cross_entropy(logits_per_text, labels)
+    loss = (loss_i + loss_t) / 2
 
     return loss
 
@@ -78,7 +77,7 @@ def compute_id(image_logits, text_logits, labels):
     criterion = nn.CrossEntropyLoss(reduction="mean")
 
     loss = criterion(image_logits, labels) + criterion(text_logits, labels)
-    
+
     return loss / 2
 
 
@@ -117,3 +116,11 @@ def compute_cmpm(image_embeddings, text_embeddings, labels, epsilon=1e-8):
 
     return cmpm_loss
 
+
+def compute_fg(fg_logits, temperature=0.07):
+    """Symmetric InfoNCE over the fine-grained text-to-image similarity matrix."""
+    logits = fg_logits.float() / temperature
+    labels = torch.arange(logits.size(0), device=logits.device)
+    loss_t = F.cross_entropy(logits, labels)
+    loss_i = F.cross_entropy(logits.t(), labels)
+    return 0.5 * (loss_t + loss_i)
