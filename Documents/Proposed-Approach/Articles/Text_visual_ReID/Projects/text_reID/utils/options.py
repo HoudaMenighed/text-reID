@@ -6,7 +6,7 @@ def get_args():
     ######################## general settings ########################
     parser.add_argument("--local_rank", default=0, type=int)
     parser.add_argument("--name", default="baseline", help="experiment name to save")
-    parser.add_argument("--output_dir", default="logs")
+    parser.add_argument("--output_dir", default="/content/drive/MyDrive/IRRA_checkpoints/efficient_fg_icfg")
     parser.add_argument("--log_period", default=100)
     parser.add_argument("--eval_period", type = int, default=1)
     parser.add_argument("--val_dataset", default="test")  # use val set when evaluate, if test use test set
