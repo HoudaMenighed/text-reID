@@ -30,7 +30,8 @@ def do_train(start_epoch, args, model, train_loader, evaluator, optimizer,
         "mlm_loss": AverageMeter(),
         "img_acc": AverageMeter(),
         "txt_acc": AverageMeter(),
-        "mlm_acc": AverageMeter()
+        "mlm_acc": AverageMeter(),
+        "fg_loss": AverageMeter(),
     }
 
     tb_writer = SummaryWriter(log_dir=args.output_dir)
@@ -48,7 +49,19 @@ def do_train(start_epoch, args, model, train_loader, evaluator, optimizer,
             batch = {k: v.to(device) for k, v in batch.items()}
 
             ret = model(batch)
-            total_loss = sum([v for k, v in ret.items() if "loss" in k])
+            total_loss = sum(v for k, v in ret.items() if "loss" in k)
+
+            # Debug: verify the loss components returned by the model
+            if n_iter == 0:
+                logger.info(f"Model return keys: {list(ret.keys())}")
+                logger.info(
+                    "Loss components: "
+                    + str({
+                        k: round(v.item(), 6) if torch.is_tensor(v) else v
+                        for k, v in ret.items()
+                        if "loss" in k
+                    })
+                )
 
             batch_size = batch['images'].shape[0]
             meters['loss'].update(total_loss.item(), batch_size)
@@ -59,7 +72,9 @@ def do_train(start_epoch, args, model, train_loader, evaluator, optimizer,
 
             meters['img_acc'].update(ret.get('img_acc', 0), batch_size)
             meters['txt_acc'].update(ret.get('txt_acc', 0), batch_size)
+            meters['fg_loss'].update(ret.get('fg_loss', 0), batch_size)
             meters['mlm_acc'].update(ret.get('mlm_acc', 0), 1)
+
 
             optimizer.zero_grad()
             total_loss.backward()
@@ -103,9 +118,9 @@ def do_train(start_epoch, args, model, train_loader, evaluator, optimizer,
                     best_top1 = top1
                     arguments["epoch"] = epoch
                     checkpointer.save("best", **arguments)
-        if (epoch) % 5 == 0:
+        if get_rank() == 0 and (epoch + 1) % 5 == 0:
             checkpointer.save(
-                name=f"checkpoint_epoch_{epoch + 1}",
+                f"checkpoint_epoch_{epoch + 1}",
                 **arguments
             )
     if get_rank() == 0:

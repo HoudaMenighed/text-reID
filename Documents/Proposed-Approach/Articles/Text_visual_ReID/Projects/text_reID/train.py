@@ -72,6 +72,6 @@ if __name__ == '__main__':
     start_epoch = 1
     if args.resume:
         checkpoint = checkpointer.resume(args.resume_ckpt_file)
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] + 1
 
     do_train(start_epoch, args, model, train_loader, evaluator, optimizer, scheduler, checkpointer)
